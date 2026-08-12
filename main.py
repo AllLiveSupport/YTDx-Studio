@@ -1,123 +1,54 @@
+#!/usr/bin/env python3
 """
-YTDx - YouTube Video İndirici
-Ana uygulama modülü
+YTDx Downloader - Universal Desktop Launcher
+Launches the high-performance YTDx Downloader application.
 """
 
 import os
 import sys
-import logging
-from PyQt6.QtWidgets import QApplication
-from PyQt6.QtGui import QIcon, QPalette, QColor
+import subprocess
+import platform
 
-# Loglama ayarları
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler("ytdx.log"),
-        logging.StreamHandler()
-    ]
-)
+def find_app_binary():
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    system = platform.system().lower()
 
-logger = logging.getLogger("YTDx")
+    if system == "linux":
+        candidates = [
+            os.path.join(base_dir, "aura_app", "build", "linux", "x64", "release", "bundle", "aura_app"),
+            os.path.join(base_dir, "aura_app", "build", "linux", "x64", "debug", "bundle", "aura_app"),
+            os.path.join(base_dir, "build", "linux", "x64", "release", "bundle", "aura_app"),
+        ]
+    elif system == "windows":
+        candidates = [
+            os.path.join(base_dir, "aura_app", "build", "windows", "x64", "runner", "Release", "aura_app.exe"),
+            os.path.join(base_dir, "aura_app", "build", "windows", "x64", "runner", "Debug", "aura_app.exe"),
+        ]
+    elif system == "darwin":  # macOS
+        candidates = [
+            os.path.join(base_dir, "aura_app", "build", "macos", "Build", "Products", "Release", "aura_app.app", "Contents", "MacOS", "aura_app"),
+        ]
+    else:
+        candidates = []
 
-def apply_theme(app, theme):
-    palette = QPalette()
-    if theme == 'dark':
-        palette.setColor(QPalette.ColorRole.Window, QColor(32, 32, 32))
-        palette.setColor(QPalette.ColorRole.WindowText, QColor(255, 255, 255))
-        palette.setColor(QPalette.ColorRole.Base, QColor(45, 45, 45))
-        palette.setColor(QPalette.ColorRole.AlternateBase, QColor(32, 32, 32))
-        palette.setColor(QPalette.ColorRole.ToolTipBase, QColor(255, 255, 255))
-        palette.setColor(QPalette.ColorRole.ToolTipText, QColor(255, 255, 255))
-        palette.setColor(QPalette.ColorRole.Text, QColor(255, 255, 255))
-        palette.setColor(QPalette.ColorRole.Button, QColor(32, 32, 32))
-        palette.setColor(QPalette.ColorRole.ButtonText, QColor(255, 255, 255))
-        palette.setColor(QPalette.ColorRole.BrightText, QColor(255, 0, 0))
-        palette.setColor(QPalette.ColorRole.Link, QColor(0, 122, 255))
-        palette.setColor(QPalette.ColorRole.Highlight, QColor(0, 122, 255))
-        palette.setColor(QPalette.ColorRole.HighlightedText, QColor(255, 255, 255))
-        palette.setColor(QPalette.ColorRole.PlaceholderText, QColor(200, 200, 200))
-        palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Text, QColor(127, 127, 127))
-        palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.ButtonText, QColor(127, 127, 127))
-        palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.Highlight, QColor(80, 80, 80))
-        palette.setColor(QPalette.ColorGroup.Disabled, QPalette.ColorRole.HighlightedText, QColor(127, 127, 127))
-    else:  # light
-        palette.setColor(QPalette.ColorRole.Window, QColor(240, 240, 240))
-        palette.setColor(QPalette.ColorRole.WindowText, QColor(0, 0, 0))
-        palette.setColor(QPalette.ColorRole.Base, QColor(255, 255, 255))
-        palette.setColor(QPalette.ColorRole.AlternateBase, QColor(240, 240, 240))
-        palette.setColor(QPalette.ColorRole.ToolTipBase, QColor(0, 0, 0))
-        palette.setColor(QPalette.ColorRole.ToolTipText, QColor(0, 0, 0))
-        palette.setColor(QPalette.ColorRole.Text, QColor(0, 0, 0))
-        palette.setColor(QPalette.ColorRole.Button, QColor(240, 240, 240))
-        palette.setColor(QPalette.ColorRole.ButtonText, QColor(0, 0, 0))
-        palette.setColor(QPalette.ColorRole.BrightText, QColor(255, 0, 0))
-        palette.setColor(QPalette.ColorRole.Link, QColor(0, 0, 255))
-        palette.setColor(QPalette.ColorRole.Highlight, QColor(0, 120, 215))
-        palette.setColor(QPalette.ColorRole.HighlightedText, QColor(255, 255, 255))
-    app.setPalette(palette)
+    for path in candidates:
+        if os.path.exists(path):
+            return path
+    return None
 
 def main():
-    """Ana uygulama fonksiyonu."""
-    try:
-        logger.info("Uygulama başlatılıyor...")
-        
-        # Dil yöneticisini başlat
-        from src.language import get_language_manager
-        lang_manager = get_language_manager()
-        lang_manager.load_language_preference()
-        lang_manager.load_theme_preference()
-        
-        # PyQt uygulamasını başlat
-        app = QApplication(sys.argv)
-        app.setStyle("Fusion")  # Modern görünüm için Fusion stilini kullan
-        apply_theme(app, lang_manager.current_theme)
-        
-        # İkon yolunu ayarla
-        icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'icons', 'icon.ico')
-        if os.path.exists(icon_path):
-            app.setWindowIcon(QIcon(icon_path))
+    binary = find_app_binary()
+    if binary:
+        print(f"[*] Launching YTDx Downloader: {binary}")
+        sys.exit(subprocess.call([binary] + sys.argv[1:]))
+    else:
+        print("[!] Pre-compiled binary not found. Running with Flutter CLI...")
+        aura_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "aura_app")
+        if os.path.exists(aura_dir):
+            sys.exit(subprocess.call(["flutter", "run", "-d", "linux"], cwd=aura_dir))
         else:
-            logger.warning(f"İkon dosyası bulunamadı: {icon_path}")
-        
-        # Ana pencereyi oluştur
-        from src.gui import MainWindow
-        window = MainWindow(lang_manager)
-        window.show()
-        
-        # Uygulamayı çalıştır
-        exit_code = app.exec()
-        
-        # Yeniden başlatma kodu kontrol et
-        if exit_code == MainWindow.RESTART_CODE:
-            logger.info("Uygulama yeniden başlatılıyor...")
-            try:
-                # Windows'ta daha güvenilir bir yeniden başlatma yöntemi
-                import subprocess
-                import shlex
-                
-                # Mevcut çalışma dizinini al
-                cwd = os.getcwd()
-                
-                # Python yürütülebilir dosyasının yolunu al
-                python_exe = sys.executable
-                
-                # Uygulama dizinine geç
-                os.chdir(os.path.dirname(os.path.abspath(__file__)))
-                
-                # Yeni işlemi başlat
-                subprocess.Popen([python_exe] + sys.argv, cwd=cwd)
-                
-            except Exception as e:
-                logger.error(f"Yeniden başlatma hatası: {str(e)}")
-                
-        # Uygulamayı kapat
-        sys.exit(0)
-        
-    except Exception as e:
-        logger.error(f"Uygulama hatası: {str(e)}")
-        sys.exit(1)
+            print("[X] Error: Could not find application directory.")
+            sys.exit(1)
 
 if __name__ == "__main__":
     main()

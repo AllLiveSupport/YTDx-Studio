@@ -1,155 +1,205 @@
 <div align="center">
-  
-# 📺 YTDx - Professional YouTube Downloader
 
-### 🚀 High Quality Video & Music Downloader with FFmpeg Integration
+  <img src="icons/icon_256.png" alt="YTDx Studio Logo" width="120" height="120" style="border-radius: 28px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
 
-<br/>
+  # ⚡ YTDx Studio
+  ### Next-Generation 4K Video & 320kbps Music Downloader Desktop Suite
 
-[![GitHub stars](https://img.shields.io/github/stars/AllLiveSupport/YTDx-Youtube-Downloader?style=for-the-badge&logo=github&color=yellow)](https://github.com/AllLiveSupport/YTDx-Youtube-Downloader/stargazers)
-[![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge&logo=opensourceinitiative&logoColor=white)](LICENSE)
-[![Python](https://img.shields.io/badge/Python-3.11+-blue?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
-[![Buy Me a Coffee](https://img.shields.io/badge/Buy%20Me%20a%20Coffee-FFDD00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/alllivesupport)
+  [![Flutter](https://img.shields.io/badge/Flutter-3.x%2B-02569B?style=for-the-badge&logo=flutter&logoColor=white)](https://flutter.dev)
+  [![Python](https://img.shields.io/badge/Python-3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://python.org)
+  [![Platform](https://img.shields.io/badge/Platform-Linux%20%7C%20Windows-E95420?style=for-the-badge&logo=linux&logoColor=white)](https://github.com/AllLiveSupport/YTDx-Studio)
+  [![License](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
+  [![Performance](https://img.shields.io/badge/Performance-120%20FPS%20AOT-7C3AED?style=for-the-badge&logo=speedtest&logoColor=white)](#performance)
 
-<br/>
+  <p align="center">
+    <b>YTDx Studio</b> is a high-performance, modern, and beautiful desktop application designed for seamless YouTube video and audio downloading, playlist batch management, in-app media playback, and live global trend exploration.
+  </p>
 
-<img src="https://img.shields.io/badge/Windows-Supported-success?style=flat-square&logo=windows&logoColor=white"/>
-<img src="https://img.shields.io/badge/PyQt6-GUI-success?style=flat-square&logo=qt&logoColor=white"/>
-<img src="https://img.shields.io/badge/FFmpeg-Powered-success?style=flat-square&logo=ffmpeg&logoColor=white"/>
-
----
-
-> [!CAUTION]
-> ### ⚖️ Legal Disclaimer & Notice
-> This tool is provided for **personal and educational purposes only**. By using this software, you agree to the following:
->
-> *   **📚 Respect Copyright:** Only use this for your personal backup of content you have legally accessed.
-> *   **⚖️ Terms of Service:** You are solely responsible for complying with YouTube's Terms of Service.
-> *   **👤 Ownership:** Do not redistribute or monetize downloaded files without proper authorization.
-> *   **🛡️ Liability:** The developers assume no liability for any misuse of this tool or any copyright infringement committed by the user.
-
----
-
-**✨ 4K/8K Support • 🎵 MP3/M4A with Metadata • 📋 Playlist Support • 🌍 Multi-Language**
+  [Key Features](#-key-features) • [Screenshots](#-screenshots-showcase) • [Quick Installation](#-quick-1-step-installation) • [Architecture](#-architecture) • [Contributing](#-contributing)
 
 </div>
-
-<br/>
-
----
-
-## 📸 Screenshots
-
-<div align="center">
-  <img src="docs/images/GUI1.PNG" width="30%" alt="Dark Mode">
-  <img src="docs/images/GUI2.PNG" width="30%" alt="Settings">
-  <img src="docs/images/GUI3.PNG" width="30%" alt="Download">
-</div>
-
-<br/>
 
 ---
 
 ## 🌟 Key Features
 
-- **📺 High Quality Video**: Download videos in 1080p, 2K, 4K, and even 8K (uses FFmpeg to merge video+audio).
-- **🎵 Music Downloader**: Convert videos to MP3 or M4A with high bitrate.
-- **🖼️ Smart Metadata**: Automatically adds cover art (thumbnail), artist, and title tags to music files.
-- **📋 Playlist Support**: Download single videos or entire playlists with one click.
-- **🌍 Multi-Language Intelligence**: Fully localized for 4 languages:
-  - 🇹🇷 Turkish (Türkçe)
-  - 🇺🇸 English
-  - 🇪🇸 Spanish (Español)
-  - 🇷🇺 Russian (Pусский)
-- **🧹 Storage Management**: Built-in `pytubefix` cache clearing tool to fix throttling issues.
-- **🌗 Theme Support**: Toggle between Modern Dark and Light themes.
+### 🎬 1. Ultra HD 4K/8K Video Downloader
+- Download videos in **4320p (8K)**, **2160p (4K)**, **1440p (2K)**, **1080p (Full HD)**, **720p**, and **480p**.
+- Automatic **FFmpeg DASH Adaptive Muxing**: Combines master video streams with high-bitrate audio streams in 0.3s with zero quality degradation.
 
-<br/>
+### 🎵 2. Studio Master 320kbps MP3 & ID3 Cover Embedding
+- Extract crystal-clear **320kbps MP3**, **256kbps M4A (AAC)**, **FLAC (Lossless Hi-Res)**, and **WAV** audio.
+- Automatic **ID3v2 Metadata & HD Album Art Embedding** directly into audio files for full compatibility with Spotify, Apple Music, VLC, and car stereos.
 
----
+### 📑 3. Spotify/Apple Music Style Playlist Batch Engine
+- Parse entire YouTube playlists in seconds.
+- **In-Playlist Real-Time Search**: Instantly filter tracks inside 100+ item playlists.
+- Quick Selection Pills: *Select All*, *Deselect All*, *Invert Selection*.
+- Batch Download Control Center with custom subfolder auto-organization.
 
-## 🚀 Installation & Setup
+### 🌍 4. Multi-Country & Multi-Topic Trending Explorer
+- Real-time localized trend exploration across **7 Topic Categories**: *General Trends*, *Music & Songs*, *Gaming*, *Movies & Cinema*, *Sports*, *Tech & Science*, *News & Media*.
+- Native language trend algorithms for **South Korea (K-Pop)**, **Japan (J-Pop/Anime)**, **United States**, **Germany**, **France**, **Spain**, **Brazil**, **Russia**, **Azerbaijan**, and **Turkey**.
 
-### 1️⃣ Download & Install Requirements
+### 🎧 5. Integrated In-App Media Player
+- Persistent bottom player bar with seek slider, track artwork, volume control, and playback controls.
+- Play downloaded MP3s and MP4s immediately inside the app without needing external players.
 
-First, clone the project and install the necessary Python libraries:
-
-```bash
-git clone https://github.com/AllLiveSupport/YTDx-Youtube-Downloader.git
-cd YTDx-Youtube-Downloader
-pip install -r requirements.txt
-```
-
-### 2️⃣ FFmpeg Installation (Critical for High Quality)
-
-For 1080p+ video and proper audio conversion, **FFmpeg** is required.
-
-**Step-by-Step Guide:**
-
-1.  **Download FFmpeg:**
-    - Go to [ffmpeg.org/download](https://ffmpeg.org/download.html) and download a build for Windows (e.g., from gyan.dev).
-2.  **Extract:**
-    - Extract the downloaded ZIP file.
-    - Rename the folder to `ffmpeg` and move it to `C:\`.
-    - You should have `C:\ffmpeg\bin\ffmpeg.exe`.
-3.  **Add to Path (Automatic Command):**
-    - Open **CMD** (Command Prompt) as **Administrator**.
-    - Run the following command to permanently add FFmpeg to your system PATH:
-
-    ```cmd
-    setx /M PATH "%PATH%;C:\ffmpeg\bin"
-    ```
-
-    > **Note:** Access is denied errors? Make sure to run CMD as **Administrator**.
-
-<br/>
+### ⚡ 6. 120 FPS High-Performance Engine
+- Built with **Flutter Desktop AOT Native Machine Code**.
+- **0ms Instant In-Memory Query Caching** for instant category and search navigation.
+- Isolated **GPU RepaintBoundaries** for zero frame drops during active downloads.
 
 ---
 
-## 🎮 Usage
-
-### Video Mode
-1.  Paste a YouTube Video or Playlist URL.
-2.  Select your desired resolution (e.g., 1080p, 4K).
-3.  Choose destination folder.
-4.  Click **Download**.
-
-### Audio Mode
-1.  Switch to the **Music** tab.
-2.  Paste URL.
-3.  Select Format (MP3 / M4A) and Quality.
-4.  If downloading a playlist, check "Playlist Download".
-5.  Click **Download**. *The app will automatically tag files with covers!*
-
-<br/>
-
----
-
-## 📂 Project Structure
-
-```bash
-📦 YTDx
- ┣ 📂 docs/images         # Screenshots
- ┣ 📂 languages           # Translation Files (JSON)
- ┣ 📂 src                 # Source Code
- ┃ ┣ 📜 downloader.py     # Core Downloading Logic
- ┃ ┣ 📜 gui.py            # PyQt6 Interface
- ┃ ┗ 📜 language.py       # Localization Manager
- ┣ 📜 main.py             # Entry Point
- ┣ 📜 requirements.txt    # Python Dependencies
- ┗ 📜 README.md           # This File
-```
-
-<br/>
-
----
+## 📸 Screenshots Showcase
 
 <div align="center">
 
-### ⭐ Star this repo if you like it!
+### 🏠 Home & Instant Category Switcher
+<img src="docs/images/Home.png" alt="Home Screen" width="92%" style="border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.25);">
 
-<br/>
+<br><br>
 
-[![GitHub](https://img.shields.io/badge/AllLiveSupport-181717?style=for-the-badge&logo=github&logoColor=white)](https://github.com/AllLiveSupport)
+### 🔍 Fast Search & Media Discovery
+<img src="docs/images/Search.png" alt="Search Screen" width="92%" style="border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.25);">
 
+<br><br>
+
+### 💎 Format & Studio Quality Modal
+<img src="docs/images/DownloadSelect.png" alt="Quality Selector Modal" width="92%" style="border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.25);">
+
+<br><br>
+
+### 📑 Modern Playlist & Batch Downloader
+<img src="docs/images/Playlist.png" alt="Playlist Screen" width="92%" style="border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.25);">
+
+<br><br>
+
+### 📥 Active Downloads & History Management
+<img src="docs/images/Download1.png" alt="Downloads Screen" width="92%" style="border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.25);">
+
+<br><br>
+
+### ⚙️ Engine, Theme & Localization Settings
+<img src="docs/images/Setting.png" alt="Settings Screen" width="92%" style="border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.25);">
+
+</div>
+
+---
+
+## 🚀 Quick 1-Step Installation (Linux)
+
+You can install and integrate **YTDx Studio** into your Linux system (Ubuntu/Debian, Arch/Manjaro, Fedora, openSUSE) with a single command:
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/AllLiveSupport/YTDx-Studio.git
+cd YTDx-Studio
+
+# 2. Run the automated universal installer
+chmod +x install.sh
+./install.sh
+```
+
+### What `install.sh` does automatically:
+1. 🔍 Detects your Linux distribution (`apt`, `pacman`, `dnf`, `zypper`).
+2. 📦 Installs **FFmpeg**, **Python 3**, and media libraries (`libgtk-3`, `libgstreamer`).
+3. 🐍 Sets up an isolated `.venv` environment and installs dependencies (`pytubefix`, `yt-dlp`, `mutagen`, `Pillow`).
+4. 🖥️ Integrates **YTDx Studio** into your **Linux Application Menu** with desktop shortcut & high-resolution icon.
+5. ⚡ Adds the `ytdx` command to your terminal.
+
+---
+
+## 🛠️ Manual Build & Development
+
+If you are a developer and want to build the Flutter release binary manually:
+
+### Prerequisites:
+- [Flutter SDK (3.x+)](https://docs.flutter.dev/get-started/install/linux)
+- [Python (3.10+)](https://www.python.org/)
+- [FFmpeg](https://ffmpeg.org/)
+
+### Build Commands:
+```bash
+# 1. Install Python dependencies
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+
+# 2. Build Flutter Linux Release Bundle
+cd aura_app
+flutter pub get
+flutter build linux --release
+cd ..
+
+# 3. Run Application
+python3 main.py
+```
+
+---
+
+## 🏗️ Architecture
+
+```
+YTDx-Studio/
+├── aura_app/                  # Flutter 3.x Desktop Client (AOT Compiled)
+│   ├── lib/
+│   │   ├── models/            # VideoItem, DownloadTask, AppSettings
+│   │   ├── providers/         # AppState, PlayerProvider
+│   │   ├── screens/           # Home, Search, Downloads, Playlists, Settings
+│   │   ├── services/          # Pure Dart YouTube Engine, OAuth 2.0, I18n, Audio
+│   │   ├── theme/             # Modern Dark / Light Design Tokens
+│   │   └── widgets/           # VideoCard, QualityModal, Sidebar, PlayerBar
+│   └── linux/                 # Native Linux GTK Runner
+├── src/
+│   ├── pytube_runner.py       # High-speed Pytubefix 4K/320k FFmpeg remux CLI
+│   └── oauth_helper.py        # OAuth helper bridge
+├── docs/images/               # UI Showcase Screenshots
+├── icons/                     # Application Icons (256x256, 128x128, ICO, PNG)
+├── install.sh                 # Multi-Distro Automated Linux Setup Script
+├── main.py                    # Universal Release Launcher & Bridge
+└── requirements.txt           # Python backend dependencies
+```
+
+---
+
+## 🌐 Supported Languages
+
+YTDx Studio features 100% native localization:
+- 🇹🇷 **Türkçe** (Turkish)
+- 🇺🇸 **English** (English)
+- 🇪🇸 **Español** (Spanish)
+- 🇷🇺 **Русский** (Russian)
+
+---
+
+## 🤝 Contributing
+
+Contributions, issues, and feature requests are welcome! Feel free to check the [issues page](https://github.com/AllLiveSupport/YTDx-Studio/issues).
+
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+---
+
+## ⚖️ Disclaimer & Privacy
+
+This software is developed strictly for **educational, personal archiving, and research purposes**. 
+- The developers do not host, store, or distribute copyrighted media.
+- Users are solely responsible for compliance with their local copyright laws and third-party terms of service.
+- **Privacy First:** 100% Zero telemetry, zero analytics, zero data collection.
+
+For full legal terms and privacy details, please read our [DISCLAIMER.md](DISCLAIMER.md).
+
+---
+
+## 📄 License
+
+Distributed under the **MIT License**. See [LICENSE](LICENSE) for more information.
+
+<div align="center">
+  <sub>Built with ❤️ using Flutter, Dart, and Python.</sub>
 </div>

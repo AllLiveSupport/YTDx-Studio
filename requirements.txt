@@ -1,5 +1,5 @@
 pytubefix
-PyQt6
+yt-dlp
 Pillow
 mutagen
 requests

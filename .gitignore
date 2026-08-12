@@ -1,4 +1,4 @@
-# Python
+# Python & Bytecode
 __pycache__/
 *.py[cod]
 *$py.class
@@ -16,32 +16,48 @@ parts/
 sdist/
 var/
 wheels/
-share/python-wheels/
 *.egg-info/
 .installed.cfg
 *.egg
 MANIFEST
 
-# Virtual Environment
+# Python Virtual Environments
+.venv/
 venv/
 env/
 ENV/
 .env
 
-# Installer logs
-pip-log.txt
-pip-delete-this-directory.txt
-
-# Application specific
+# Application State & Personal Configs
 ytdx.log
 config.json
 theme_config.json
+tokens.json
 download_history.json
 Downloads/
 output/
 
-# IDEs
+# Flutter & Dart Build Artifacts
+aura_app/build/
+aura_app/.dart_tool/
+aura_app/.flutter-plugins
+aura_app/.flutter-plugins-dependencies
+aura_app/.pub-cache/
+aura_app/.pub/
+aura_app/linux/flutter/ephemeral/
+aura_app/windows/flutter/ephemeral/
+
+# Local C/C++ Tooling & Machine Databases
+compile_commands.json
+aura_app/compile_commands.json
+.clangd
+.clangd/
+
+# IDEs & OS Files
 .vscode/
 .idea/
 .gemini/
 .DS_Store
+*.swp
+*.swo
+*~

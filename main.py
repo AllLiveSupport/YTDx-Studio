@@ -15,6 +15,7 @@ def find_app_binary():
 
     if system == "linux":
         candidates = [
+            os.path.join(base_dir, "bin", "aura_app"),
             os.path.join(base_dir, "aura_app", "build", "linux", "x64", "release", "bundle", "aura_app"),
             os.path.join(base_dir, "aura_app", "build", "linux", "x64", "debug", "bundle", "aura_app"),
             os.path.join(base_dir, "build", "linux", "x64", "release", "bundle", "aura_app"),

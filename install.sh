@@ -97,24 +97,31 @@ echo -e "   -> ${GREEN}✓ Python bağımlılıkları başarıyla yüklendi.${NC
 echo ""
 echo -e "${BLUE}[4/5]${NC} 🚀 YTDx Studio Uygulama Motoru Doğrulanıyor..."
 
-RELEASE_BIN="$SCRIPT_DIR/aura_app/build/linux/x64/release/bundle/aura_app"
+RELEASE_BIN=""
+if [ -f "$SCRIPT_DIR/bin/aura_app" ]; then
+    RELEASE_BIN="$SCRIPT_DIR/bin/aura_app"
+elif [ -f "$SCRIPT_DIR/aura_app/build/linux/x64/release/bundle/aura_app" ]; then
+    RELEASE_BIN="$SCRIPT_DIR/aura_app/build/linux/x64/release/bundle/aura_app"
+fi
 
-if [ ! -f "$RELEASE_BIN" ]; then
-    if command -v flutter >/dev/null 2>&1; then
+if [ -z "$RELEASE_BIN" ] || [ ! -f "$RELEASE_BIN" ]; then
+    if [ -d "$SCRIPT_DIR/aura_app" ] && command -v flutter >/dev/null 2>&1; then
         echo -e "   -> Flutter SDK bulundu. Bağımlılıklar alınıyor ve Release sürümü derleniyor..."
         (
             cd "$SCRIPT_DIR/aura_app"
             flutter pub get
             flutter build linux --release -t lib/main.dart
         )
+        RELEASE_BIN="$SCRIPT_DIR/aura_app/build/linux/x64/release/bundle/aura_app"
     else
         echo -e "${YELLOW}⚠️ Release paketi bulunamadı ve Flutter SDK yüklü değil.${NC}"
         echo -e "   -> Uygulama derlemek için Flutter SDK gereklidir: https://docs.flutter.dev/get-started/install/linux${NC}"
     fi
 fi
 
-if [ -f "$RELEASE_BIN" ]; then
+if [ -n "$RELEASE_BIN" ] && [ -f "$RELEASE_BIN" ]; then
     chmod +x "$RELEASE_BIN"
+    echo -e "   -> ${GREEN}✓ Uygulama motoru doğrulandı: $RELEASE_BIN${NC}"
 fi
 chmod +x "$SCRIPT_DIR/main.py"
 

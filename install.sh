@@ -101,13 +101,15 @@ RELEASE_BIN="$SCRIPT_DIR/aura_app/build/linux/x64/release/bundle/aura_app"
 
 if [ ! -f "$RELEASE_BIN" ]; then
     if command -v flutter >/dev/null 2>&1; then
-        echo -e "   -> Flutter SDK bulundu. Release sürümü derleniyor..."
-        cd "$SCRIPT_DIR/aura_app"
-        flutter build linux --release
-        cd "$SCRIPT_DIR"
+        echo -e "   -> Flutter SDK bulundu. Bağımlılıklar alınıyor ve Release sürümü derleniyor..."
+        (
+            cd "$SCRIPT_DIR/aura_app"
+            flutter pub get
+            flutter build linux --release -t lib/main.dart
+        )
     else
-        echo -e "${YELLOW}⚠️ Release paketi henüz derlenmemiş ve Flutter SDK bulunamadı.${NC}"
-        echo -e "   -> Python köprüsü üzerinden doğrudan başlatılacak.${NC}"
+        echo -e "${YELLOW}⚠️ Release paketi bulunamadı ve Flutter SDK yüklü değil.${NC}"
+        echo -e "   -> Uygulama derlemek için Flutter SDK gereklidir: https://docs.flutter.dev/get-started/install/linux${NC}"
     fi
 fi
 

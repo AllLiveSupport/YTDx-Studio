@@ -158,6 +158,19 @@ EOF
 
 chmod +x "$DESKTOP_FILE"
 
+# Place shortcut directly on Desktop screen
+DESKTOP_PATH="$(xdg-user-dir DESKTOP 2>/dev/null || echo "$HOME/Desktop")"
+if [ -d "$DESKTOP_PATH" ]; then
+    cp "$DESKTOP_FILE" "$DESKTOP_PATH/ytdx-studio.desktop"
+    chmod +x "$DESKTOP_PATH/ytdx-studio.desktop"
+    gio set "$DESKTOP_PATH/ytdx-studio.desktop" metadata::trusted true 2>/dev/null || true
+fi
+if [ -d "$HOME/Masaüstü" ] && [ "$DESKTOP_PATH" != "$HOME/Masaüstü" ]; then
+    cp "$DESKTOP_FILE" "$HOME/Masaüstü/ytdx-studio.desktop"
+    chmod +x "$HOME/Masaüstü/ytdx-studio.desktop"
+    gio set "$HOME/Masaüstü/ytdx-studio.desktop" metadata::trusted true 2>/dev/null || true
+fi
+
 # Create Terminal CLI command 'ytdx'
 cat << EOF > "$BIN_DIR/ytdx"
 #!/usr/bin/env bash

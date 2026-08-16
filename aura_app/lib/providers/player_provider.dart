@@ -19,6 +19,30 @@ class PlayerProvider extends ChangeNotifier {
   bool _isLooping = false;
   bool _isVisible = false;
 
+  PlayerProvider() {
+    // Kill any orphaned audio processes on app startup
+    cleanupAllAudioProcesses();
+
+    // Hook OS termination signals on Linux/macOS
+    if (Platform.isLinux || Platform.isMacOS) {
+      try {
+        ProcessSignal.sigint.watch().listen((_) => cleanupAllAudioProcesses());
+        ProcessSignal.sigterm.watch().listen((_) => cleanupAllAudioProcesses());
+      } catch (_) {}
+    }
+  }
+
+  /// Kills any lingering ffplay or mpv playback processes
+  static void cleanupAllAudioProcesses() {
+    try {
+      if (Platform.isLinux || Platform.isMacOS) {
+        Process.runSync('killall', ['-9', 'ffplay']);
+      } else if (Platform.isWindows) {
+        Process.runSync('taskkill', ['/F', '/IM', 'ffplay.exe']);
+      }
+    } catch (_) {}
+  }
+
   DownloadTask? get currentTask => _currentTask;
   CustomPlayerState get playerState => _playerState;
   bool get isPlaying => _playerState == CustomPlayerState.playing;
@@ -167,6 +191,7 @@ class PlayerProvider extends ChangeNotifier {
       _nativeProcess?.kill(ProcessSignal.sigkill);
     } catch (_) {}
     _nativeProcess = null;
+    cleanupAllAudioProcesses();
   }
 
   Future<void> togglePlayPause() async {

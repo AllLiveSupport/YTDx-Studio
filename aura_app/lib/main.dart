@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'providers/app_state.dart';
@@ -51,8 +52,15 @@ class AuraApp extends StatelessWidget {
   }
 }
 
-class MainShell extends StatelessWidget {
+class MainShell extends StatefulWidget {
   const MainShell({super.key});
+
+  @override
+  State<MainShell> createState() => _MainShellState();
+}
+
+class _MainShellState extends State<MainShell> with WidgetsBindingObserver {
+  late final AppLifecycleListener _lifecycleListener;
 
   static const List<Widget> _screens = [
     HomeScreen(),
@@ -61,6 +69,36 @@ class MainShell extends StatelessWidget {
     PlaylistsScreen(),
     SettingsScreen(),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _lifecycleListener = AppLifecycleListener(
+      onExitRequested: () async {
+        PlayerProvider.cleanupAllAudioProcesses();
+        return AppExitResponse.exit;
+      },
+      onDetach: () {
+        PlayerProvider.cleanupAllAudioProcesses();
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _lifecycleListener.dispose();
+    PlayerProvider.cleanupAllAudioProcesses();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.detached || state == AppLifecycleState.hidden) {
+      PlayerProvider.cleanupAllAudioProcesses();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

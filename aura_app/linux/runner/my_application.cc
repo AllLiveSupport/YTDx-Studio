@@ -101,18 +101,16 @@ static gboolean my_application_local_command_line(GApplication* application,
 
 // Implements GApplication::startup.
 static void my_application_startup(GApplication* application) {
-  // MyApplication* self = MY_APPLICATION(object);
-
-  // Perform any actions required at application startup.
+  // Clean up any lingering media player processes on startup
+  int ret __attribute__((unused)) = system("killall -9 ffplay 2>/dev/null");
 
   G_APPLICATION_CLASS(my_application_parent_class)->startup(application);
 }
 
 // Implements GApplication::shutdown.
 static void my_application_shutdown(GApplication* application) {
-  // MyApplication* self = MY_APPLICATION(object);
-
-  // Perform any actions required at application shutdown.
+  // Terminate any media player subprocesses immediately on app shutdown
+  int ret __attribute__((unused)) = system("killall -9 ffplay 2>/dev/null");
 
   G_APPLICATION_CLASS(my_application_parent_class)->shutdown(application);
 }

@@ -9,7 +9,94 @@ class YouTubeService {
   static VideoSearchList? _activeSearchList;
   static final Map<String, _CachedSearch> _searchCache = {};
 
-  /// Searches YouTube using Pure Dart engine (YoutubeExplode) with yt-dlp fallback and 0ms Memory Caching
+  /// Extracts 11-char YouTube video ID from any video, shorts, or share link
+  static String? extractVideoId(String input) {
+    final clean = input.trim();
+    if (clean.isEmpty) return null;
+
+    // 1. Direct 11-character video ID
+    if (RegExp(r'^[a-zA-Z0-9_-]{11}$').hasMatch(clean)) {
+      return clean;
+    }
+
+    // 2. youtube.com/shorts/...
+    final shortsMatch = RegExp(r'youtube\.com/shorts/([a-zA-Z0-9_-]{11})', caseSensitive: false).firstMatch(clean);
+    if (shortsMatch != null) return shortsMatch.group(1);
+
+    // 3. youtu.be/...
+    final youtuMatch = RegExp(r'youtu\.be/([a-zA-Z0-9_-]{11})', caseSensitive: false).firstMatch(clean);
+    if (youtuMatch != null) return youtuMatch.group(1);
+
+    // 4. youtube.com/watch?v=...
+    final vMatch = RegExp(r'[?&]v=([a-zA-Z0-9_-]{11})', caseSensitive: false).firstMatch(clean);
+    if (vMatch != null) return vMatch.group(1);
+
+    // 5. youtube.com/embed/... or /v/... or /live/...
+    final embedMatch = RegExp(r'youtube\.com/(?:embed|v|live)/([a-zA-Z0-9_-]{11})', caseSensitive: false).firstMatch(clean);
+    if (embedMatch != null) return embedMatch.group(1);
+
+    return null;
+  }
+
+  /// Fetches single video metadata directly by video ID (Pure Dart + yt-dlp fallback)
+  static Future<VideoItem?> fetchDirectVideo(String videoId) async {
+    // 1. Pure Dart Engine (YoutubeExplode)
+    try {
+      _activeYt?.close();
+      _activeYt = YoutubeExplode();
+      final v = await _activeYt!.videos.get(VideoId(videoId));
+      String dur = '';
+      if (v.duration != null) {
+        final totalSec = v.duration!.inSeconds;
+        final mins = totalSec ~/ 60;
+        final secs = totalSec % 60;
+        final hours = mins ~/ 60;
+        final remMins = mins % 60;
+        if (hours > 0) {
+          dur = '${hours.toString().padLeft(2, '0')}:${remMins.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
+        } else {
+          dur = '${remMins.toString().padLeft(2, '0')}:${secs.toString().padLeft(2, '0')}';
+        }
+      }
+
+      return VideoItem(
+        id: v.id.value,
+        title: v.title,
+        url: v.url,
+        channel: v.author,
+        duration: dur.isNotEmpty ? dur : '0:00',
+        thumbnail: v.thumbnails.highResUrl.isNotEmpty
+            ? v.thumbnails.highResUrl
+            : 'https://i.ytimg.com/vi/${v.id.value}/maxresdefault.jpg',
+        viewCount: v.engagement.viewCount.toString(),
+        uploadDate: v.uploadDate?.toString(),
+      );
+    } catch (_) {}
+
+    // 2. Subprocess Fallback (yt-dlp)
+    try {
+      final ytdlpExe = BackendLocator.findYtDlp();
+      final process = await Process.run(
+        ytdlpExe,
+        [
+          '--dump-json',
+          '--no-warnings',
+          '--no-check-certificate',
+          '--no-playlist',
+          'https://www.youtube.com/watch?v=$videoId',
+        ],
+      );
+
+      if (process.exitCode == 0 && process.stdout.toString().isNotEmpty) {
+        final json = jsonDecode(process.stdout.toString().trim());
+        return VideoItem.fromJson(json);
+      }
+    } catch (_) {}
+
+    return null;
+  }
+
+  /// Searches YouTube using Pure Dart engine (YoutubeExplode) with direct URL resolution, yt-dlp fallback and 0ms Memory Caching
   static Future<List<VideoItem>> searchVideos(String query, {bool forceRefresh = false}) async {
     final cleanQuery = query.trim();
     if (cleanQuery.isEmpty) return [];
@@ -19,6 +106,17 @@ class YouTubeService {
       final cached = _searchCache[cleanQuery]!;
       if (DateTime.now().difference(cached.timestamp).inMinutes < 10) {
         return cached.items;
+      }
+    }
+
+    // 0. Direct YouTube Video or Shorts URL Detection
+    final directVideoId = extractVideoId(cleanQuery);
+    if (directVideoId != null) {
+      final directItem = await fetchDirectVideo(directVideoId);
+      if (directItem != null) {
+        final directList = [directItem];
+        _searchCache[cleanQuery] = _CachedSearch(items: directList, timestamp: DateTime.now());
+        return directList;
       }
     }
 

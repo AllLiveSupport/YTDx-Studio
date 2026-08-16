@@ -88,22 +88,69 @@
 
 ---
 
-## 🚀 Quick 1-Step Installation (Linux)
+## 📦 Download & Quick Installation (Pre-Built Binaries)
 
-You can install and integrate **YTDx Studio** into your Linux system (Ubuntu/Debian, Arch/Manjaro, Fedora, openSUSE) with a single command:
+Choose the best package for your Linux distribution from [GitHub Releases](https://github.com/AllLiveSupport/YTDx-Studio/releases/tag/v1.0.0):
+
+### 🚀 1. Universal `.AppImage` (Recommended - Works on All Linux)
+No installation required. Double-click or run from terminal:
+```bash
+# Make executable and run
+chmod +x YTDx-Studio-1.0.0-x86_64.AppImage
+./YTDx-Studio-1.0.0-x86_64.AppImage
+```
+
+### 🐧 2. Debian / Ubuntu / Linux Mint / Pop!_OS (`.deb`)
+```bash
+sudo dpkg -i ytdx-studio_1.0.0_amd64.deb
+sudo apt-get install -f  # (optional) resolves any missing system libraries
+```
+
+### 📦 3. Portable `.tar.gz` (Complete Bundle with 1-Click Installer)
+Extract anywhere and run the automated desktop installer:
+```bash
+# 1. Extract archive
+tar -xzf YTDx-Studio-1.0.0-Linux-x86_64.tar.gz
+
+# 2. Enter folder
+cd YTDx-Studio-1.0.0
+
+# 3. Run automated installer (creates desktop icon and app menu entry)
+chmod +x install.sh
+./install.sh
+```
+
+### 🏹 4. Arch Linux / Manjaro / CachyOS (`PKGBUILD`)
+```bash
+makepkg -si
+```
+
+---
+
+## 🧹 Complete Uninstallation
+To cleanly remove all desktop shortcuts, application menu entries, and binary symlinks from your system:
+```bash
+./uninstall.sh
+```
+
+---
+
+## 🛠️ Clone & Install from Source (For Developers)
+
+You can also clone the repository and run the automated universal setup:
 
 ```bash
 # 1. Clone the repository
 git clone https://github.com/AllLiveSupport/YTDx-Studio.git
 cd YTDx-Studio
 
-# 2. Run the automated universal installer
+# 2. Run the automated installer
 chmod +x install.sh
 ./install.sh
 ```
 
 ### What `install.sh` does automatically:
-1. 🔍 Detects your Linux distribution (`apt`, `pacman`, `dnf`, `zypper`).
+1. 🔍 Detects your Linux distribution (`pacman`, `apt`, `dnf`, `zypper`).
 2. 📦 Installs **FFmpeg**, **Python 3**, and media libraries (`libgtk-3`, `libgstreamer`).
 3. 🐍 Sets up an isolated `.venv` environment and installs dependencies (`pytubefix`, `yt-dlp`, `mutagen`, `Pillow`).
 4. 🖥️ Integrates **YTDx Studio** into your **Linux Application Menu** with desktop shortcut & high-resolution icon.

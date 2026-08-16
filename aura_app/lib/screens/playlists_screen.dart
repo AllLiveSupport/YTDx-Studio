@@ -892,15 +892,15 @@ except Exception as ex:
                               color: AppColors.redVideo,
                               onTap: () => setState(() {
                                 _selectedFormat = 'mp4';
-                                _selectedQuality = '1080p';
+                                _selectedQuality = 'auto';
                               }),
                             ),
                             const SizedBox(width: 8),
                             _FormatChip(
-                              label: 'M4A',
+                              label: 'M4A (Müzik)',
                               icon: Icons.graphic_eq_rounded,
                               isSelected: _selectedFormat == 'm4a',
-                              color: AppColors.primaryBlue,
+                              color: Colors.cyanAccent.shade700,
                               onTap: () => setState(() {
                                 _selectedFormat = 'm4a';
                                 _selectedQuality = '256k';
@@ -913,7 +913,9 @@ except Exception as ex:
 
                         // Quality Selector
                         Text(
-                          I18n.tr('modal_title_video'),
+                          (_selectedFormat == 'mp4')
+                              ? I18n.tr('modal_title_video')
+                              : I18n.tr('modal_title_audio'),
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
@@ -935,7 +937,7 @@ except Exception as ex:
                               dropdownColor: isDark ? AppColors.darkCard : AppColors.lightCard,
                               items: (_selectedFormat == 'mp4')
                                   ? const [
-                                      DropdownMenuItem(value: 'auto', child: Text('otomatik (En Yüksek)')),
+                                      DropdownMenuItem(value: 'auto', child: Text('otomatik (En Yüksek Kalite)')),
                                       DropdownMenuItem(value: '4320p', child: Text('4320p (8K Ultra HD)')),
                                       DropdownMenuItem(value: '2160p', child: Text('2160p (4K Ultra HD)')),
                                       DropdownMenuItem(value: '1440p', child: Text('1440p (2K QHD)')),
@@ -943,18 +945,16 @@ except Exception as ex:
                                       DropdownMenuItem(value: '720p', child: Text('720p HD')),
                                       DropdownMenuItem(value: '480p', child: Text('480p SD')),
                                       DropdownMenuItem(value: '360p', child: Text('360p')),
-                                      DropdownMenuItem(value: '240p', child: Text('240p')),
-                                      DropdownMenuItem(value: '144p', child: Text('144p')),
                                     ]
-                                  : const [
-                                      DropdownMenuItem(value: '320k', child: Text('320 kbps (Ultra HQ MP3)')),
-                                      DropdownMenuItem(value: '256k', child: Text('256 kbps (Yüksek)')),
-                                      DropdownMenuItem(value: '192k', child: Text('192 kbps (Standart)')),
-                                      DropdownMenuItem(value: '128k', child: Text('128 kbps (Hızlı)')),
-                                      DropdownMenuItem(value: 'lossless', child: Text('FLAC (Kayıpsız Hi-Res)')),
-                                      DropdownMenuItem(value: 'wav', child: Text('WAV (Ham Stüdyo)')),
-                                      DropdownMenuItem(value: '160k', child: Text('OPUS (160 kbps)')),
-                                    ],
+                                  : (_selectedFormat == 'm4a')
+                                      ? const [
+                                          DropdownMenuItem(value: '256k', child: Text('En Yüksek Kalite (Tavsiye Edilen)')),
+                                          DropdownMenuItem(value: '128k', child: Text('Düşük / Hızlı Kalite')),
+                                        ]
+                                      : const [
+                                          DropdownMenuItem(value: '320k', child: Text('En Yüksek Kalite (Tavsiye Edilen)')),
+                                          DropdownMenuItem(value: '128k', child: Text('Düşük / Hızlı Kalite')),
+                                        ],
                               onChanged: (val) {
                                 if (val != null) setState(() => _selectedQuality = val);
                               },
@@ -1069,40 +1069,51 @@ except Exception as ex:
                         const SizedBox(height: 24),
 
                         // Big Glowing Batch Download Button
-                        Container(
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: _selectedFormat == 'mp3'
-                                  ? [AppColors.greenMusic, const Color(0xFF00BFA5)]
-                                  : [AppColors.primaryBlue, AppColors.purpleAccent],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: BorderRadius.circular(14),
-                            boxShadow: [
-                              BoxShadow(
-                                color: (_selectedFormat == 'mp3' ? AppColors.greenMusic : AppColors.primaryBlue)
-                                    .withValues(alpha: 0.35),
-                                blurRadius: 14,
-                                offset: const Offset(0, 4),
+                        Builder(
+                          builder: (context) {
+                            final isAudioFormat = _selectedFormat == 'mp3' || _selectedFormat == 'm4a';
+                            final List<Color> gradientColors = isAudioFormat
+                                ? (_selectedFormat == 'mp3'
+                                    ? [AppColors.greenMusic, const Color(0xFF00BFA5)]
+                                    : [const Color(0xFF00ACC1), AppColors.primaryBlue])
+                                : [AppColors.redVideo, AppColors.purpleAccent];
+                            final Color glowColor = isAudioFormat
+                                ? (_selectedFormat == 'mp3' ? AppColors.greenMusic : Colors.cyanAccent)
+                                : AppColors.primaryBlue;
+
+                            return Container(
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: gradientColors,
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                borderRadius: BorderRadius.circular(14),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: glowColor.withValues(alpha: 0.35),
+                                    blurRadius: 14,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
                               ),
-                            ],
-                          ),
-                          child: ElevatedButton.icon(
-                            icon: const Icon(Icons.cloud_download_rounded, size: 20, color: Colors.white),
-                            label: Text(
-                              '${_selectedFormat == 'mp3' ? I18n.tr('playlist_download_audio') : I18n.tr('playlist_download_video')} (${_selectedVideoIds.length})',
-                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.transparent,
-                              shadowColor: Colors.transparent,
-                              padding: const EdgeInsets.symmetric(vertical: 16),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                            ),
-                            onPressed: _selectedVideoIds.isEmpty ? null : () => _startBatchDownload(appState),
-                          ),
+                              child: ElevatedButton.icon(
+                                icon: const Icon(Icons.cloud_download_rounded, size: 20, color: Colors.white),
+                                label: Text(
+                                  '${isAudioFormat ? I18n.tr('playlist_download_audio') : I18n.tr('playlist_download_video')} (${_selectedVideoIds.length})',
+                                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.transparent,
+                                  shadowColor: Colors.transparent,
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                ),
+                                onPressed: _selectedVideoIds.isEmpty ? null : () => _startBatchDownload(appState),
+                              ),
+                            );
+                          },
                         ),
                       ],
                     ),

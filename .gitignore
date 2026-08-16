@@ -58,4 +58,7 @@ aura_app/compile_commands.json
 .DS_Store
 *.swp
 *.swo
+
+# Internal Documentation & Notes
+memory-bank/
 *~

@@ -199,7 +199,7 @@ class YouTubeService {
           '--dump-json',
           '--no-warnings',
           '--no-check-certificate',
-          '--extractor-args', 'youtube:player_client=android_vr,web',
+          '--extractor-args', 'youtube:player_client=android,web',
           'ytsearch$limit:$query',
         ],
       );
@@ -410,7 +410,7 @@ class YouTubeService {
           '--dump-json',
           '--no-warnings',
           '--no-check-certificate',
-          '--extractor-args', 'youtube:player_client=android_vr,web',
+          '--extractor-args', 'youtube:player_client=android,web',
           playlistUrl,
         ],
       );

@@ -44,10 +44,77 @@ def sanitize_filename(name: str) -> str:
     clean = re.sub(r'[\\/*?:"<>|]', "", name).strip()
     return clean if clean else "audio_download"
 
+def get_pytube_instance(url: str) -> YouTube:
+    for c in ["ANDROID", "MWEB", "WEB"]:
+        try:
+            yt = YouTube(url, client=c, on_progress_callback=progress_callback)
+            if yt.title and yt.streams:
+                return yt
+        except Exception:
+            continue
+    return YouTube(url, on_progress_callback=progress_callback)
+
+def find_ytdlp_executable() -> str:
+    py_dir = os.path.dirname(sys.executable)
+    candidate = os.path.join(py_dir, "yt-dlp")
+    if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
+        return candidate
+    candidate_win = os.path.join(py_dir, "yt-dlp.exe")
+    if os.path.isfile(candidate_win):
+        return candidate_win
+
+    found = shutil.which("yt-dlp")
+    if found:
+        return found
+
+    repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    venv_candidate = os.path.join(repo_root, ".venv", "bin", "yt-dlp")
+    if os.path.isfile(venv_candidate):
+        return venv_candidate
+
+    return "yt-dlp"
+
+def fallback_ytdlp(url: str, output_dir: str, is_audio: bool, fmt: str = "mp3", quality: str = "320k") -> bool:
+    try:
+        print("[status] Otomatik yt-dlp yedek motoruna geçiliyor...", flush=True)
+        ytdlp_bin = find_ytdlp_executable()
+        cmd = [
+            ytdlp_bin,
+            "--newline",
+            "--no-warnings",
+            "--no-check-certificate",
+            "--retries", "5",
+            "--fragment-retries", "5",
+            "--socket-timeout", "30",
+            "--extractor-args", "youtube:player_client=android,web",
+            "--windows-filenames",
+            "-o", os.path.join(output_dir, "%(title)s.%(ext)s")
+        ]
+        if is_audio:
+            cmd.extend([
+                "-x",
+                "--audio-format", fmt,
+                "--audio-quality", "0" if quality == "320k" else "2",
+                "--embed-thumbnail",
+                "--add-metadata"
+            ])
+        else:
+            cmd.extend([
+                "--merge-output-format", "mp4",
+                "--embed-thumbnail",
+                "--add-metadata"
+            ])
+        cmd.append(url)
+        proc = subprocess.run(cmd)
+        return proc.returncode == 0
+    except Exception as e:
+        print(f"[error] Yedek motor hatası: {e}", flush=True)
+        return False
+
 def download_audio(url: str, output_dir: str, fmt: str = "mp3", quality: str = "320k") -> bool:
     try:
-        print(f"[status] Pytubefix video bilgileri alınıyor...", flush=True)
-        yt = YouTube(url, on_progress_callback=progress_callback)
+        print(f"[status] Video bilgileri alınıyor...", flush=True)
+        yt = get_pytube_instance(url)
         title = sanitize_filename(yt.title)
         
         # Select best audio stream
@@ -147,13 +214,13 @@ def download_audio(url: str, output_dir: str, fmt: str = "mp3", quality: str = "
         print("[download] 100.0% of finished successfully!", flush=True)
         return True
     except Exception as e:
-        print(f"[error] Pytubefix ses indirme hatası: {e}", flush=True)
-        return False
+        print(f"[warning] Pytubefix akış uyarısı ({e}), otomatik yedek motora geçiliyor...", flush=True)
+        return fallback_ytdlp(url, output_dir, is_audio=True, fmt=fmt, quality=quality)
 
 def download_video(url: str, output_dir: str, quality: str = "auto") -> bool:
     try:
-        print(f"[status] Pytubefix video bilgileri alınıyor...", flush=True)
-        yt = YouTube(url, on_progress_callback=progress_callback)
+        print(f"[status] Video bilgileri alınıyor...", flush=True)
+        yt = get_pytube_instance(url)
         title = sanitize_filename(yt.title)
 
         video_stream = None
@@ -230,8 +297,8 @@ def download_video(url: str, output_dir: str, quality: str = "auto") -> bool:
         print("[download] 100.0% of finished successfully!", flush=True)
         return True
     except Exception as e:
-        print(f"[error] Pytubefix video indirme hatası: {e}", flush=True)
-        return False
+        print(f"[warning] Pytubefix video uyarısı ({e}), otomatik yedek motora geçiliyor...", flush=True)
+        return fallback_ytdlp(url, output_dir, is_audio=False, quality=quality)
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Standalone Pytubefix Runner")

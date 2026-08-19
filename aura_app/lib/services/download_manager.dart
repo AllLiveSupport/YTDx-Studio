@@ -32,16 +32,16 @@ class DownloadManager {
       task.engineUsed = 'pytubefix';
       success = await _downloadWithPytubefix(task, settings, outDir.path, onUpdate);
       if (!success && task.status != DownloadStatus.cancelled) {
-        task.engineUsed = 'yt-dlp (android_vr)';
+        task.engineUsed = 'yt-dlp (Auto/Fast)';
         success = await _downloadWithYtDlp(task, settings, outDir.path, onUpdate);
       }
     } else if (settings.engine == 'ytdlp') {
       // 2. User selected yt-dlp engine
-      task.engineUsed = 'yt-dlp (android_vr)';
+      task.engineUsed = 'yt-dlp (Auto/Fast)';
       success = await _downloadWithYtDlp(task, settings, outDir.path, onUpdate);
     } else {
-      // 3. Auto Hybrid (High-Speed android_vr + Pure Dart fallback)
-      task.engineUsed = 'yt-dlp (android_vr)';
+      // 3. Auto Hybrid (Multi-Tier yt-dlp + Pure Dart fallback)
+      task.engineUsed = 'yt-dlp (Auto/Fast)';
       success = await _downloadWithYtDlp(task, settings, outDir.path, onUpdate);
       if (!success && task.status != DownloadStatus.cancelled) {
         task.engineUsed = 'Pure Dart';
@@ -285,7 +285,7 @@ class DownloadManager {
     }
   }
 
-  /// 2. Subprocess Downloader (yt-dlp with android_vr extractor)
+  /// 2. Subprocess Downloader (yt-dlp with Multi-Tier Client Fallback Matrix)
   static Future<bool> _downloadWithYtDlp(
     DownloadTask task,
     AppSettings settings,
@@ -295,15 +295,22 @@ class DownloadManager {
     try {
       final ytdlpExe = BackendLocator.findYtDlp();
 
-      List<String> buildArgs(bool useCookies) {
+      List<String> buildArgs({required bool useCookies, String? playerClient}) {
         final List<String> args = [
           '--newline',
           '--no-warnings',
           '--no-check-certificate',
-          '--extractor-args', 'youtube:player_client=android_vr,web',
+          '--retries', '5',
+          '--fragment-retries', '5',
+          '--socket-timeout', '30',
+          '--concurrent-fragments', '4',
           '--windows-filenames',
           '-o', '$outputDirPath/%(title)s.%(ext)s',
         ];
+
+        if (playerClient != null && playerClient.isNotEmpty) {
+          args.addAll(['--extractor-args', 'youtube:player_client=$playerClient']);
+        }
 
         // Safe cookies
         if (useCookies && settings.browserCookies != 'none') {
@@ -347,40 +354,47 @@ class DownloadManager {
         return args;
       }
 
-      // 1. Try with selected settings
-      var args = buildArgs(true);
-      var process = await Process.start(ytdlpExe, args);
-      task.activeProcess = process;
-
-      final stderrBuffer = StringBuffer();
-      process.stderr.transform(utf8.decoder).transform(const LineSplitter()).listen((errLine) {
-        stderrBuffer.writeln(errLine);
-        if (errLine.trim().isNotEmpty && !errLine.contains('WARNING:')) {
-          task.errorMessage = errLine.trim();
-        }
-      });
-
-      process.stdout.transform(utf8.decoder).transform(const LineSplitter()).listen((line) {
-        _parseProgressLine(line, task);
-        onUpdate();
-      });
-
-      var exitCode = await process.exitCode;
-      task.activeProcess = null;
-
-      // 2. If failed and cookies were used, retry without cookies
-      if (exitCode != 0 && settings.browserCookies != 'none') {
-        args = buildArgs(false);
-        process = await Process.start(ytdlpExe, args);
+      Future<int> runProcessWithArgs(List<String> args) async {
+        final process = await Process.start(ytdlpExe, args);
         task.activeProcess = process;
+
+        process.stderr.transform(utf8.decoder).transform(const LineSplitter()).listen((errLine) {
+          if (errLine.trim().isNotEmpty && !errLine.contains('WARNING:') && !errLine.contains('DeprecationWarning:')) {
+            task.errorMessage = errLine.trim();
+          }
+        });
 
         process.stdout.transform(utf8.decoder).transform(const LineSplitter()).listen((line) {
           _parseProgressLine(line, task);
           onUpdate();
         });
 
-        exitCode = await process.exitCode;
+        final code = await process.exitCode;
         task.activeProcess = null;
+        return code;
+      }
+
+      // Tier 1: Primary Modern Client ('android,web')
+      var exitCode = await runProcessWithArgs(buildArgs(useCookies: true, playerClient: 'android,web'));
+
+      // Tier 2: If failed and cookies were used, retry without cookies
+      if (exitCode != 0 && settings.browserCookies != 'none' && task.status != DownloadStatus.cancelled) {
+        exitCode = await runProcessWithArgs(buildArgs(useCookies: false, playerClient: 'android,web'));
+      }
+
+      // Tier 3: If failed (e.g. 403 or SABR issue), try pure 'android' client
+      if (exitCode != 0 && task.status != DownloadStatus.cancelled) {
+        exitCode = await runProcessWithArgs(buildArgs(useCookies: false, playerClient: 'android'));
+      }
+
+      // Tier 4: If failed, try 'android,mweb' client
+      if (exitCode != 0 && task.status != DownloadStatus.cancelled) {
+        exitCode = await runProcessWithArgs(buildArgs(useCookies: false, playerClient: 'android,mweb'));
+      }
+
+      // Tier 5: If still failed, try standard default yt-dlp client without extractor-args
+      if (exitCode != 0 && task.status != DownloadStatus.cancelled) {
+        exitCode = await runProcessWithArgs(buildArgs(useCookies: false, playerClient: null));
       }
 
       if (exitCode == 0) {

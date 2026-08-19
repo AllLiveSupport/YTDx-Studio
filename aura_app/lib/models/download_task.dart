@@ -26,7 +26,7 @@ class DownloadTask {
   String sizeInfo; // e.g. "1.2 GB / 2.5 GB"
   String? filePath;
   String? errorMessage;
-  String engineUsed; // 'yt-dlp (android_vr)', 'pytubefix', 'Pure Dart'
+  String engineUsed; // 'yt-dlp (Auto/Fast)', 'pytubefix', 'Pure Dart'
   Process? activeProcess;
 
   DownloadTask({

@@ -59,12 +59,39 @@ class DownloadManager {
       if (task.filePath == null || !File(task.filePath!).existsSync()) {
         task.filePath = _findMatchingFile(outDir.path, task);
       }
+      _cleanupResidualTempFiles(outDir.path, _sanitizeFilename(task.video.title));
     } else if (task.status != DownloadStatus.cancelled) {
       task.status = DownloadStatus.failed;
       task.errorMessage ??= 'İndirme tamamlanamadı.';
+      _cleanupResidualTempFiles(outDir.path, _sanitizeFilename(task.video.title));
     }
 
     onUpdate();
+  }
+
+  static void _cleanupResidualTempFiles(String dirPath, String sanitizedTitle) {
+    try {
+      final dir = Directory(dirPath);
+      if (!dir.existsSync()) return;
+      final files = dir.listSync();
+      for (var f in files) {
+        if (f is File) {
+          final name = f.uri.pathSegments.last;
+          if (name.startsWith(sanitizedTitle) &&
+              (name.contains('_temp_raw') ||
+               name.contains('_temp') ||
+               name.contains('_vtmp') ||
+               name.contains('_atemp') ||
+               name.contains('_vtemp') ||
+               name.endsWith('.part') ||
+               name.endsWith('.ytdl'))) {
+            try {
+              f.deleteSync();
+            } catch (_) {}
+          }
+        }
+      }
+    } catch (_) {}
   }
 
   /// 1. Pure Dart Native Downloader (YoutubeExplode)

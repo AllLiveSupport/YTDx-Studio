@@ -44,6 +44,22 @@ def sanitize_filename(name: str) -> str:
     clean = re.sub(r'[\\/*?:"<>|]', "", name).strip()
     return clean if clean else "audio_download"
 
+def cleanup_temp_files(output_dir: str, title: str) -> None:
+    """Removes any temporary residual files matching title with _temp_raw, _vtemp, or _atemp."""
+    try:
+        if not os.path.exists(output_dir):
+            return
+        for f in os.listdir(output_dir):
+            if f.startswith(title) and any(tag in f for tag in ["_temp_raw", "_vtemp", "_atemp", "_temp"]):
+                full_p = os.path.join(output_dir, f)
+                if os.path.isfile(full_p):
+                    try:
+                        os.remove(full_p)
+                    except Exception:
+                        pass
+    except Exception:
+        pass
+
 def get_pytube_instance(url: str) -> YouTube:
     for c in ["ANDROID", "MWEB", "WEB"]:
         try:
@@ -112,6 +128,7 @@ def fallback_ytdlp(url: str, output_dir: str, is_audio: bool, fmt: str = "mp3", 
         return False
 
 def download_audio(url: str, output_dir: str, fmt: str = "mp3", quality: str = "320k") -> bool:
+    title: str = ""
     try:
         print(f"[status] Video bilgileri alınıyor...", flush=True)
         yt = get_pytube_instance(url)
@@ -130,7 +147,7 @@ def download_audio(url: str, output_dir: str, fmt: str = "mp3", quality: str = "
             print("[error] Ses dosyası indirilemedi.", flush=True)
             return False
 
-        raw_file: str = str(raw_download)
+        raw_file: str = raw_download
         fmt_clean: str = fmt.lower().strip()
         final_path: str = os.path.join(output_dir, f"{title}.{fmt_clean}")
         if os.path.exists(final_path):
@@ -211,13 +228,16 @@ def download_audio(url: str, output_dir: str, fmt: str = "mp3", quality: str = "
             except Exception:
                 pass
 
+        cleanup_temp_files(output_dir, title)
         print("[download] 100.0% of finished successfully!", flush=True)
         return True
     except Exception as e:
+        cleanup_temp_files(output_dir, title)
         print(f"[warning] Pytubefix akış uyarısı ({e}), otomatik yedek motora geçiliyor...", flush=True)
         return fallback_ytdlp(url, output_dir, is_audio=True, fmt=fmt, quality=quality)
 
 def download_video(url: str, output_dir: str, quality: str = "auto") -> bool:
+    title: str = ""
     try:
         print(f"[status] Video bilgileri alınıyor...", flush=True)
         yt = get_pytube_instance(url)
@@ -225,7 +245,7 @@ def download_video(url: str, output_dir: str, quality: str = "auto") -> bool:
 
         video_stream = None
         if quality != "auto" and bool(quality and quality != "auto"):
-            res_str = str(quality).replace("p", "").strip() + "p"
+            res_str = quality.replace("p", "").strip() + "p"
             # Try specific video stream
             video_stream = yt.streams.filter(res=res_str, only_video=True).first()
             if not video_stream:
@@ -255,7 +275,7 @@ def download_video(url: str, output_dir: str, quality: str = "auto") -> bool:
                 print("[error] Video akışı indirilemedi.", flush=True)
                 return False
 
-            temp_vid: str = str(raw_vid)
+            temp_vid: str = raw_vid
 
             # Download audio stream
             audio_stream = yt.streams.get_audio_only()
@@ -271,7 +291,7 @@ def download_video(url: str, output_dir: str, quality: str = "auto") -> bool:
                     pass
 
             if raw_aud and os.path.exists(raw_aud):
-                temp_aud: str = str(raw_aud)
+                temp_aud: str = raw_aud
                 print(f"[status] FFmpeg ile yüksek kalite ses ve video birleştiriliyor ({video_stream.resolution})...", flush=True)
                 cmd_merge: List[str] = [
                     "ffmpeg", "-y",
@@ -294,9 +314,11 @@ def download_video(url: str, output_dir: str, quality: str = "auto") -> bool:
             else:
                 shutil.move(temp_vid, final_path)
 
+        cleanup_temp_files(output_dir, title)
         print("[download] 100.0% of finished successfully!", flush=True)
         return True
     except Exception as e:
+        cleanup_temp_files(output_dir, title)
         print(f"[warning] Pytubefix video uyarısı ({e}), otomatik yedek motora geçiliyor...", flush=True)
         return fallback_ytdlp(url, output_dir, is_audio=False, quality=quality)
 

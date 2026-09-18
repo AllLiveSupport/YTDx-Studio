@@ -6,6 +6,7 @@ import '../providers/player_provider.dart';
 import '../theme/app_colors.dart';
 import '../services/file_launcher.dart';
 import '../services/i18n.dart';
+import 'task_log_dialog.dart';
 
 class HistoryCard extends StatelessWidget {
   final DownloadTask task;
@@ -346,6 +347,33 @@ class HistoryCard extends StatelessWidget {
                         Icons.folder_open_rounded,
                         size: 15,
                         color: isDark ? AppColors.darkTextSecondary : AppColors.lightTextSecondary,
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(width: 5),
+
+                  // Process & Error Log Button
+                  Tooltip(
+                    message: 'İşlem ve Hata Günlüğü',
+                    child: InkWell(
+                      onTap: () => TaskLogDialog.show(context, task),
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        padding: const EdgeInsets.all(7),
+                        decoration: BoxDecoration(
+                          color: isDark ? const Color(0xFF22252D) : const Color(0xFFEEF2F6),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: isDark ? AppColors.darkBorder : AppColors.lightBorder,
+                            width: 1,
+                          ),
+                        ),
+                        child: Icon(
+                          Icons.terminal_rounded,
+                          size: 15,
+                          color: task.errorCount > 0 ? Colors.redAccent : (isDark ? Colors.cyanAccent : AppColors.primaryBlue),
+                        ),
                       ),
                     ),
                   ),

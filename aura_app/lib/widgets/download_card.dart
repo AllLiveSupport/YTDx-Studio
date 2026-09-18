@@ -4,6 +4,7 @@ import '../models/download_task.dart';
 import '../providers/app_state.dart';
 import '../theme/app_colors.dart';
 import '../services/i18n.dart';
+import 'task_log_dialog.dart';
 
 class DownloadCard extends StatelessWidget {
   final DownloadTask task;
@@ -124,6 +125,38 @@ class DownloadCard extends StatelessWidget {
                   ),
                 ),
 
+                // Process Log Viewer Button (Prominent Terminal Button)
+                OutlinedButton.icon(
+                  icon: Icon(
+                    Icons.terminal_rounded,
+                    size: 15,
+                    color: task.errorCount > 0
+                        ? Colors.redAccent
+                        : (task.isRunning ? AppColors.primaryBlue : (isDark ? Colors.cyanAccent : AppColors.primaryBlue)),
+                  ),
+                  label: Text(
+                    task.errorCount > 0 ? 'Hata (${task.errorCount})' : 'Günlük',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                      color: task.errorCount > 0
+                          ? Colors.redAccent
+                          : (task.isRunning ? AppColors.primaryBlue : (isDark ? Colors.cyanAccent : AppColors.primaryBlue)),
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    side: BorderSide(
+                      color: task.errorCount > 0
+                          ? Colors.redAccent.withValues(alpha: 0.5)
+                          : (isDark ? Colors.white24 : Colors.black12),
+                    ),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  onPressed: () => TaskLogDialog.show(context, task),
+                ),
+                const SizedBox(width: 8),
+
                 // Control Buttons (Cancel / Status Icon)
                 if (task.status == DownloadStatus.queued) ...[
                   Container(
@@ -178,11 +211,11 @@ class DownloadCard extends StatelessWidget {
                           ? null
                           : (task.progress > 0 ? task.progress : null),
                       minHeight: 5,
-                      backgroundColor: isDark ? const Color(0xFF282B33) : const Color(0xFFE2E8F0),
+                      backgroundColor: isDark ? const Color(0xFF262933) : const Color(0xFFE2E8F0),
                       valueColor: AlwaysStoppedAnimation<Color>(
-                        task.status == DownloadStatus.queued
-                            ? Colors.amber
-                            : (task.isAudio ? AppColors.greenMusic : AppColors.primary),
+                        task.status == DownloadStatus.failed
+                            ? AppColors.redVideo
+                            : (task.isAudio ? AppColors.greenMusic : AppColors.primaryBlue),
                       ),
                     ),
                   ),
@@ -222,6 +255,38 @@ class DownloadCard extends StatelessWidget {
                 ),
               ],
             ),
+
+            // Clickable error banner if failed
+            if (task.errorMessage != null && task.status == DownloadStatus.failed) ...[
+              const SizedBox(height: 8),
+              InkWell(
+                onTap: () => TaskLogDialog.show(context, task),
+                borderRadius: BorderRadius.circular(6),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: Colors.redAccent.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border.all(color: Colors.redAccent.withValues(alpha: 0.3), width: 0.8),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.info_outline_rounded, size: 13, color: Colors.redAccent),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          'Hata: ${task.errorMessage} (Detaylar ve günlük için tıklayın)',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(fontSize: 10.5, color: Colors.redAccent, fontWeight: FontWeight.w500),
+                        ),
+                      ),
+                      const Icon(Icons.arrow_forward_ios_rounded, size: 10, color: Colors.redAccent),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
       ),

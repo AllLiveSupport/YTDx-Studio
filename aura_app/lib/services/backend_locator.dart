@@ -1,41 +1,80 @@
 import 'dart:io';
 
 class BackendLocator {
-  static String get projectRoot {
-    final home = Platform.environment['HOME'] ?? '';
-    final userProfile = Platform.environment['USERPROFILE'] ?? '';
-    final defaultDir = home.isNotEmpty
-        ? '$home/Downloads/YTDx-Youtube-Downloader'
-        : (userProfile.isNotEmpty ? '$userProfile\\Downloads\\YTDx-Youtube-Downloader' : '');
+  static String? _cachedProjectRoot;
 
-    if (Directory(defaultDir).existsSync()) {
-      return defaultDir;
+  static String get projectRoot {
+    if (_cachedProjectRoot != null) {
+      return _cachedProjectRoot!;
     }
 
+    // 1. Environment variable override
+    final envRoot = Platform.environment['YTDX_PROJECT_ROOT'];
+    if (envRoot != null && envRoot.isNotEmpty && Directory(envRoot).existsSync()) {
+      _cachedProjectRoot = envRoot;
+      return envRoot;
+    }
+
+    // 2. Discover from Platform.resolvedExecutable
     try {
-      final exeParent = File(Platform.resolvedExecutable).parent;
-      Directory current = exeParent;
+      final exeFile = File(Platform.resolvedExecutable);
+      Directory current = exeFile.parent;
       for (int i = 0; i < 6; i++) {
-        if (File('${current.path}/pubspec.yaml').existsSync() || Directory('${current.path}/.venv').existsSync()) {
-          if (File('${current.path}/pubspec.yaml').existsSync() && current.parent.existsSync()) {
-            return current.parent.path;
-          }
+        if (Directory('${current.path}/.venv').existsSync() ||
+            File('${current.path}/requirements.txt').existsSync() ||
+            Directory('${current.path}/src').existsSync()) {
+          _cachedProjectRoot = current.path;
           return current.path;
+        }
+        if (File('${current.path}/pubspec.yaml').existsSync() && current.parent.existsSync()) {
+          final parent = current.parent;
+          if (Directory('${parent.path}/.venv').existsSync() ||
+              File('${parent.path}/requirements.txt').existsSync() ||
+              Directory('${parent.path}/src').existsSync()) {
+            _cachedProjectRoot = parent.path;
+            return parent.path;
+          }
         }
         current = current.parent;
       }
     } catch (_) {}
 
-    return Directory.current.path;
+    // 3. Discover from Directory.current
+    try {
+      Directory current = Directory.current;
+      for (int i = 0; i < 5; i++) {
+        if (Directory('${current.path}/.venv').existsSync() ||
+            File('${current.path}/requirements.txt').existsSync() ||
+            Directory('${current.path}/src').existsSync()) {
+          _cachedProjectRoot = current.path;
+          return current.path;
+        }
+        if (File('${current.path}/pubspec.yaml').existsSync() && current.parent.existsSync()) {
+          final parent = current.parent;
+          if (Directory('${parent.path}/.venv').existsSync() ||
+              File('${parent.path}/requirements.txt').existsSync() ||
+              Directory('${parent.path}/src').existsSync()) {
+            _cachedProjectRoot = parent.path;
+            return parent.path;
+          }
+        }
+        current = current.parent;
+      }
+    } catch (_) {}
+
+    _cachedProjectRoot = Directory.current.path;
+    return _cachedProjectRoot!;
   }
 
   static String findYtDlp() {
     final root = projectRoot;
+    final home = Platform.environment['HOME'] ?? '';
     final possiblePaths = [
       '$root/.venv/bin/yt-dlp',
       '$root/.venv/Scripts/yt-dlp.exe',
       './.venv/bin/yt-dlp',
       '../.venv/bin/yt-dlp',
+      if (home.isNotEmpty) '$home/.local/bin/yt-dlp',
       '/usr/local/bin/yt-dlp',
       '/usr/bin/yt-dlp',
       'yt-dlp',
@@ -48,6 +87,18 @@ class BackendLocator {
       }
     }
     return 'yt-dlp';
+  }
+
+  /// Returns executable and command args for launching yt-dlp,
+  /// falling back to [python, -m, yt_dlp] if yt-dlp binary is not standalone.
+  static List<String> getYtDlpLaunchArgs(List<String> downloadArgs) {
+    final ytdlpPath = findYtDlp();
+    if (File(ytdlpPath).existsSync()) {
+      return [ytdlpPath, ...downloadArgs];
+    }
+    // Fallback to executing via python -m yt_dlp
+    final pythonPath = findPython();
+    return [pythonPath, '-m', 'yt_dlp', ...downloadArgs];
   }
 
   static String findFFmpeg() {
@@ -67,10 +118,28 @@ class BackendLocator {
     return 'ffmpeg';
   }
 
+  static String findFFprobe() {
+    final possiblePaths = [
+      '/usr/bin/ffprobe',
+      '/usr/local/bin/ffprobe',
+      'ffprobe',
+      'C:\\ffprobe.exe',
+      'C:\\ffmpeg\\bin\\ffprobe.exe',
+    ];
+
+    for (var path in possiblePaths) {
+      if (File(path).existsSync()) {
+        return File(path).absolute.path;
+      }
+    }
+    return 'ffprobe';
+  }
+
   static String findPython() {
     final root = projectRoot;
     final possiblePaths = [
       '$root/.venv/bin/python',
+      '$root/.venv/bin/python3',
       '$root/.venv/Scripts/python.exe',
       './.venv/bin/python',
       '../.venv/bin/python',
@@ -93,6 +162,8 @@ class BackendLocator {
       '$root/$scriptRelativePath',
       './$scriptRelativePath',
       '../$scriptRelativePath',
+      '${Directory.current.path}/$scriptRelativePath',
+      '${Directory.current.parent.path}/$scriptRelativePath',
       scriptRelativePath,
     ];
 

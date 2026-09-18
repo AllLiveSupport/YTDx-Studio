@@ -188,7 +188,7 @@ class VideoCard extends StatelessWidget {
                     Expanded(
                       child: ElevatedButton.icon(
                         icon: const Icon(Icons.videocam, size: 14, color: Colors.white),
-                        label: const Text('MP4', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Colors.white)),
+                        label: const Text('Video', style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.bold, color: Colors.white)),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.redVideo,
                           padding: const EdgeInsets.symmetric(vertical: 8),

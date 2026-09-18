@@ -872,7 +872,9 @@ except Exception as ex:
                           ),
                         ),
                         const SizedBox(height: 8),
-                        Row(
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
                           children: [
                             _FormatChip(
                               label: 'MP3 (Müzik)',
@@ -884,7 +886,6 @@ except Exception as ex:
                                 _selectedQuality = '320k';
                               }),
                             ),
-                            const SizedBox(width: 8),
                             _FormatChip(
                               label: 'MP4 (Video)',
                               icon: Icons.videocam_rounded,
@@ -895,7 +896,16 @@ except Exception as ex:
                                 _selectedQuality = 'auto';
                               }),
                             ),
-                            const SizedBox(width: 8),
+                            _FormatChip(
+                              label: 'TS (Video)',
+                              icon: Icons.live_tv_rounded,
+                              isSelected: _selectedFormat == 'ts',
+                              color: Colors.orangeAccent,
+                              onTap: () => setState(() {
+                                _selectedFormat = 'ts';
+                                _selectedQuality = 'auto';
+                              }),
+                            ),
                             _FormatChip(
                               label: 'M4A (Müzik)',
                               icon: Icons.graphic_eq_rounded,
@@ -913,7 +923,7 @@ except Exception as ex:
 
                         // Quality Selector
                         Text(
-                          (_selectedFormat == 'mp4')
+                          (_selectedFormat == 'mp4' || _selectedFormat == 'ts')
                               ? I18n.tr('modal_title_video')
                               : I18n.tr('modal_title_audio'),
                           style: TextStyle(
@@ -935,7 +945,7 @@ except Exception as ex:
                               isExpanded: true,
                               value: _selectedQuality,
                               dropdownColor: isDark ? AppColors.darkCard : AppColors.lightCard,
-                              items: (_selectedFormat == 'mp4')
+                              items: (_selectedFormat == 'mp4' || _selectedFormat == 'ts')
                                   ? const [
                                       DropdownMenuItem(value: 'auto', child: Text('otomatik (En Yüksek Kalite)')),
                                       DropdownMenuItem(value: '4320p', child: Text('4320p (8K Ultra HD)')),

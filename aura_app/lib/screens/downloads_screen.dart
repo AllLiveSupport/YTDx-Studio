@@ -5,6 +5,7 @@ import '../models/download_task.dart';
 import '../theme/app_colors.dart';
 import '../widgets/download_card.dart';
 import '../widgets/history_card.dart';
+import '../widgets/task_log_dialog.dart';
 import '../services/file_launcher.dart';
 import '../services/i18n.dart';
 
@@ -76,6 +77,27 @@ class DownloadsScreen extends StatelessWidget {
                       FileLauncher.openFolder(appState.settings.downloadPath);
                     },
                   ),
+
+                  if (activeTasks.isNotEmpty || completedTasks.isNotEmpty) ...[
+                    const SizedBox(width: 10),
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.receipt_long_rounded, size: 16),
+                      label: const Text('İşlem & Hata Günlüğü', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isDark ? const Color(0xFF1E2433) : const Color(0xFFDBEAFE),
+                        foregroundColor: AppColors.primaryBlue,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      onPressed: () {
+                        final mostRecentTask = activeTasks.isNotEmpty
+                            ? activeTasks.first
+                            : completedTasks.first;
+                        TaskLogDialog.show(context, mostRecentTask);
+                      },
+                    ),
+                  ],
 
                   if (activeTasks.isNotEmpty) ...[
                     const SizedBox(width: 10),

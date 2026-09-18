@@ -45,12 +45,18 @@ def sanitize_filename(name: str) -> str:
     return clean if clean else "audio_download"
 
 def cleanup_temp_files(output_dir: str, title: str) -> None:
-    """Removes any temporary residual files matching title with _temp_raw, _vtemp, or _atemp."""
+    """Removes any temporary residual files matching title with _temp_raw, _vtemp, _atemp, .part, .meta, etc."""
     try:
         if not os.path.exists(output_dir):
             return
         for f in os.listdir(output_dir):
-            if f.startswith(title) and any(tag in f for tag in ["_temp_raw", "_vtemp", "_atemp", "_temp"]):
+            is_match = (f.startswith(title) or title in f) and (
+                any(tag in f for tag in ["_temp_raw", "_vtemp", "_atemp", "_temp", ".part", ".ytdl"])
+                or f.endswith(".meta")
+                or f.endswith(".webp")
+                or f.endswith(".jpg")
+            )
+            if is_match:
                 full_p = os.path.join(output_dir, f)
                 if os.path.isfile(full_p):
                     try:
@@ -59,6 +65,19 @@ def cleanup_temp_files(output_dir: str, title: str) -> None:
                         pass
     except Exception:
         pass
+
+def probe_video_codec(filepath: str) -> Optional[str]:
+    try:
+        res = subprocess.run([
+            "ffprobe", "-v", "error",
+            "-select_streams", "v:0",
+            "-show_entries", "stream=codec_name",
+            "-of", "default=noprint_wrappers=1:nokey=1",
+            filepath
+        ], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, check=True)
+        return res.stdout.strip().lower()
+    except Exception:
+        return None
 
 def get_pytube_instance(url: str) -> YouTube:
     for c in ["ANDROID", "MWEB", "WEB"]:
@@ -70,41 +89,51 @@ def get_pytube_instance(url: str) -> YouTube:
             continue
     return YouTube(url, on_progress_callback=progress_callback)
 
-def find_ytdlp_executable() -> str:
+def get_ytdlp_cmd() -> List[str]:
+    # 1. Direct module execution via current Python interpreter
+    try:
+        import yt_dlp
+        return [sys.executable, "-m", "yt_dlp"]
+    except ImportError:
+        pass
+
+    # 2. Check candidate paths
     py_dir = os.path.dirname(sys.executable)
-    candidate = os.path.join(py_dir, "yt-dlp")
-    if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
-        return candidate
-    candidate_win = os.path.join(py_dir, "yt-dlp.exe")
-    if os.path.isfile(candidate_win):
-        return candidate_win
+    for c in [
+        os.path.join(py_dir, "yt-dlp"),
+        os.path.join(py_dir, "yt-dlp.exe"),
+    ]:
+        if os.path.isfile(c) and os.access(c, os.X_OK):
+            return [c]
+
+    repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    for venv_path in [
+        os.path.join(repo_root, ".venv", "bin", "yt-dlp"),
+        os.path.join(repo_root, ".venv", "Scripts", "yt-dlp.exe"),
+    ]:
+        if os.path.isfile(venv_path):
+            return [venv_path]
 
     found = shutil.which("yt-dlp")
     if found:
-        return found
+        return [found]
 
-    repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    venv_candidate = os.path.join(repo_root, ".venv", "bin", "yt-dlp")
-    if os.path.isfile(venv_candidate):
-        return venv_candidate
+    return ["yt-dlp"]
 
-    return "yt-dlp"
-
-def fallback_ytdlp(url: str, output_dir: str, is_audio: bool, fmt: str = "mp3", quality: str = "320k") -> bool:
+def fallback_ytdlp(url: str, output_dir: str, is_audio: bool, fmt: str = "mp3", quality: str = "auto") -> bool:
     try:
         print("[status] Otomatik yt-dlp yedek motoruna geçiliyor...", flush=True)
-        ytdlp_bin = find_ytdlp_executable()
-        cmd = [
-            ytdlp_bin,
+        is_ts = fmt.lower() == "ts"
+        out_name = "%(title)s_ytdx_temp.%(ext)s" if is_ts else "%(title)s.%(ext)s"
+        cmd = get_ytdlp_cmd() + [
             "--newline",
             "--no-warnings",
             "--no-check-certificate",
             "--retries", "5",
             "--fragment-retries", "5",
             "--socket-timeout", "30",
-            "--extractor-args", "youtube:player_client=android,web",
             "--windows-filenames",
-            "-o", os.path.join(output_dir, "%(title)s.%(ext)s")
+            "-o", os.path.join(output_dir, out_name)
         ]
         if is_audio:
             cmd.extend([
@@ -115,6 +144,38 @@ def fallback_ytdlp(url: str, output_dir: str, is_audio: bool, fmt: str = "mp3", 
                 "--add-metadata"
             ])
         else:
+            q_lower = str(quality).lower()
+            if "4320" in q_lower or "8k" in q_lower:
+                cmd.extend(["-f", "bestvideo[height<=4320]+bestaudio/best"])
+            elif "2160" in q_lower or "4k" in q_lower:
+                cmd.extend(["-f", "bestvideo[height<=2160]+bestaudio/best"])
+            elif "1440" in q_lower or "2k" in q_lower:
+                cmd.extend(["-f", "bestvideo[height<=1440]+bestaudio/best"])
+            elif "1080" in q_lower:
+                if is_ts:
+                    cmd.extend(["-f", "bestvideo[height<=1080][vcodec^=avc1]+bestaudio/bestvideo[height<=1080][vcodec^=h264]+bestvideo[height<=1080]+bestaudio/best"])
+                else:
+                    cmd.extend(["-f", "bestvideo[height<=1080]+bestaudio/best"])
+            elif "720" in q_lower:
+                if is_ts:
+                    cmd.extend(["-f", "bestvideo[height<=720][vcodec^=avc1]+bestaudio/bestvideo[height<=720][vcodec^=h264]+bestvideo[height<=720]+bestaudio/best"])
+                else:
+                    cmd.extend(["-f", "bestvideo[height<=720]+bestaudio/best"])
+            elif "480" in q_lower:
+                if is_ts:
+                    cmd.extend(["-f", "bestvideo[height<=480][vcodec^=avc1]+bestaudio/bestvideo[height<=480][vcodec^=h264]+bestvideo[height<=480]+bestaudio/best"])
+                else:
+                    cmd.extend(["-f", "bestvideo[height<=480]+bestaudio/best"])
+            elif "360" in q_lower:
+                if is_ts:
+                    cmd.extend(["-f", "bestvideo[height<=360][vcodec^=avc1]+bestaudio/bestvideo[height<=360][vcodec^=h264]+bestvideo[height<=360]+bestaudio/best"])
+                else:
+                    cmd.extend(["-f", "bestvideo[height<=360]+bestaudio/best"])
+            else:
+                if is_ts:
+                    cmd.extend(["-f", "bestvideo[height<=1080][vcodec^=avc1]+bestaudio/bestvideo[height<=1080][vcodec^=h264]+bestvideo+bestaudio/best"])
+                else:
+                    cmd.extend(["-f", "bestvideo+bestaudio/best"])
             cmd.extend([
                 "--merge-output-format", "mp4",
                 "--embed-thumbnail",
@@ -122,6 +183,48 @@ def fallback_ytdlp(url: str, output_dir: str, is_audio: bool, fmt: str = "mp3", 
             ])
         cmd.append(url)
         proc = subprocess.run(cmd)
+        if proc.returncode == 0 and fmt.lower() == "ts":
+            try:
+                # Find the downloaded file
+                temp_candidates = [
+                    os.path.join(output_dir, f)
+                    for f in os.listdir(output_dir)
+                    if "_ytdx_temp" in f and f.endswith(".mp4")
+                ]
+                if not temp_candidates:
+                    temp_candidates = [
+                        os.path.join(output_dir, f)
+                        for f in os.listdir(output_dir)
+                        if f.endswith(".mp4")
+                    ]
+                if temp_candidates:
+                    temp_candidates.sort(key=lambda p: os.path.getmtime(p), reverse=True)
+                    mp4_full = temp_candidates[0]
+                    base_name = mp4_full.replace("_ytdx_temp", "")
+                    base_name = os.path.splitext(base_name)[0]
+                    ts_full = base_name + ".ts"
+
+                    vcodec = probe_video_codec(mp4_full)
+                    if vcodec in ["h264", "hevc"]:
+                        ff_args = ["ffmpeg", "-y", "-i", mp4_full, "-c:v", "copy", "-c:a", "aac", ts_full]
+                    else:
+                        ff_args = ["ffmpeg", "-y", "-i", mp4_full, "-c:v", "libx264", "-preset", "veryfast", "-crf", "20", "-c:a", "aac", ts_full]
+
+                    remux_proc = subprocess.run(ff_args, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                    if remux_proc.returncode == 0 and os.path.exists(ts_full) and os.path.getsize(ts_full) > 0:
+                        try:
+                            os.remove(mp4_full)
+                        except Exception:
+                            pass
+                        # Clean companion meta or temp files
+                        for f in os.listdir(output_dir):
+                            if "_ytdx_temp" in f:
+                                try:
+                                    os.remove(os.path.join(output_dir, f))
+                                except Exception:
+                                    pass
+            except Exception as ex:
+                print(f"[warning] TS dönüştürme uyarısı: {ex}", flush=True)
         return proc.returncode == 0
     except Exception as e:
         print(f"[error] Yedek motor hatası: {e}", flush=True)
@@ -236,7 +339,7 @@ def download_audio(url: str, output_dir: str, fmt: str = "mp3", quality: str = "
         print(f"[warning] Pytubefix akış uyarısı ({e}), otomatik yedek motora geçiliyor...", flush=True)
         return fallback_ytdlp(url, output_dir, is_audio=True, fmt=fmt, quality=quality)
 
-def download_video(url: str, output_dir: str, quality: str = "auto") -> bool:
+def download_video(url: str, output_dir: str, quality: str = "auto", fmt: str = "mp4") -> bool:
     title: str = ""
     try:
         print(f"[status] Video bilgileri alınıyor...", flush=True)
@@ -283,7 +386,8 @@ def download_video(url: str, output_dir: str, quality: str = "auto") -> bool:
             if audio_stream:
                 raw_aud = audio_stream.download(output_path=output_dir, filename=f"{title}_atemp.m4a")
 
-            final_path = os.path.join(output_dir, f"{title}.mp4")
+            ext = "ts" if fmt.lower() == "ts" else "mp4"
+            final_path = os.path.join(output_dir, f"{title}.{ext}")
             if os.path.exists(final_path):
                 try:
                     os.remove(final_path)
@@ -293,11 +397,20 @@ def download_video(url: str, output_dir: str, quality: str = "auto") -> bool:
             if raw_aud and os.path.exists(raw_aud):
                 temp_aud: str = raw_aud
                 print(f"[status] FFmpeg ile yüksek kalite ses ve video birleştiriliyor ({video_stream.resolution})...", flush=True)
+                vcodec = probe_video_codec(temp_vid)
+                if fmt.lower() == "ts":
+                    if vcodec in ["h264", "hevc"]:
+                        v_args = ["-c:v", "copy"]
+                    else:
+                        v_args = ["-c:v", "libx264", "-preset", "veryfast", "-crf", "20"]
+                else:
+                    v_args = ["-c:v", "copy"]
+
                 cmd_merge: List[str] = [
                     "ffmpeg", "-y",
                     "-i", temp_vid,
                     "-i", temp_aud,
-                    "-c:v", "copy",
+                    *v_args,
                     "-c:a", "aac",
                     "-b:a", "192k",
                     final_path
@@ -320,7 +433,7 @@ def download_video(url: str, output_dir: str, quality: str = "auto") -> bool:
     except Exception as e:
         cleanup_temp_files(output_dir, title)
         print(f"[warning] Pytubefix video uyarısı ({e}), otomatik yedek motora geçiliyor...", flush=True)
-        return fallback_ytdlp(url, output_dir, is_audio=False, quality=quality)
+        return fallback_ytdlp(url, output_dir, is_audio=False, fmt=fmt, quality=quality)
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Standalone Pytubefix Runner")
@@ -337,7 +450,7 @@ def main() -> None:
     if is_audio:
         success = download_audio(args.url, args.output, fmt=args.format.lower(), quality=args.quality)
     else:
-        success = download_video(args.url, args.output, quality=args.quality)
+        success = download_video(args.url, args.output, quality=args.quality, fmt=args.format.lower())
 
     sys.exit(0 if success else 1)
 

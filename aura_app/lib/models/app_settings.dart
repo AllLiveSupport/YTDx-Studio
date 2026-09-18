@@ -19,7 +19,7 @@ class AppSettings {
     this.language = 'tr',
     this.region = 'TR',
     this.trendingTopic = 'music',
-    this.engine = 'pytubefix',
+    this.engine = 'auto',
     this.downloadPreset = 'ask_always',
     this.defaultAudioFormat = 'mp3',
     this.defaultVideoQuality = 'auto',

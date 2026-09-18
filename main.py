@@ -38,13 +38,25 @@ def find_app_binary():
     return None
 
 def main():
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    os.environ["YTDX_PROJECT_ROOT"] = base_dir
+
+    # Prepend .venv/bin to PATH so yt-dlp and python dependencies are directly available
+    venv_bin = os.path.join(base_dir, ".venv", "bin")
+    if os.path.isdir(venv_bin):
+        os.environ["PATH"] = venv_bin + os.pathsep + os.environ.get("PATH", "")
+    elif sys.platform == "win32":
+        venv_scripts = os.path.join(base_dir, ".venv", "Scripts")
+        if os.path.isdir(venv_scripts):
+            os.environ["PATH"] = venv_scripts + os.pathsep + os.environ.get("PATH", "")
+
     binary = find_app_binary()
     if binary:
         print(f"[*] Launching YTDx Downloader: {binary}")
         sys.exit(subprocess.call([binary] + sys.argv[1:]))
     else:
         print("[!] Pre-compiled binary not found. Running with Flutter CLI...")
-        aura_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "aura_app")
+        aura_dir = os.path.join(base_dir, "aura_app")
         if os.path.exists(aura_dir):
             sys.exit(subprocess.call(["flutter", "run", "-d", "linux"], cwd=aura_dir))
         else:

@@ -872,9 +872,7 @@ except Exception as ex:
                           ),
                         ),
                         const SizedBox(height: 8),
-                        Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
+                        Row(
                           children: [
                             _FormatChip(
                               label: 'MP3 (Müzik)',
@@ -886,6 +884,7 @@ except Exception as ex:
                                 _selectedQuality = '320k';
                               }),
                             ),
+                            const SizedBox(width: 8),
                             _FormatChip(
                               label: 'MP4 (Video)',
                               icon: Icons.videocam_rounded,
@@ -896,6 +895,11 @@ except Exception as ex:
                                 _selectedQuality = 'auto';
                               }),
                             ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
                             _FormatChip(
                               label: 'TS (Video)',
                               icon: Icons.live_tv_rounded,
@@ -906,6 +910,7 @@ except Exception as ex:
                                 _selectedQuality = 'auto';
                               }),
                             ),
+                            const SizedBox(width: 8),
                             _FormatChip(
                               label: 'M4A (Müzik)',
                               icon: Icons.graphic_eq_rounded,
@@ -1174,12 +1179,16 @@ class _FormatChip extends StatelessWidget {
             children: [
               Icon(icon, size: 14, color: isSelected ? Colors.white : color),
               const SizedBox(width: 6),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.bold,
-                  color: isSelected ? Colors.white : color,
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                    color: isSelected ? Colors.white : color,
+                  ),
                 ),
               ),
             ],

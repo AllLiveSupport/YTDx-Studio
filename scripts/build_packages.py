@@ -8,10 +8,20 @@ import os
 import sys
 import shutil
 import tarfile
+import hashlib
 import subprocess
 from pathlib import Path
 
-ROOT_DIR = Path(__file__).resolve().parent.parent
+# Add scripts directory to path to import make_deb if needed
+SCRIPTS_DIR = Path(__file__).resolve().parent
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
+try:
+    from make_deb import create_deb_package
+except ImportError:
+    create_deb_package = None
+
+ROOT_DIR = SCRIPTS_DIR.parent
 DIST_DIR = ROOT_DIR / "dist"
 BUILD_DIR = ROOT_DIR / "aura_app" / "build" / "linux" / "x64" / "release" / "bundle"
 VERSION = "1.0.0"
@@ -31,7 +41,7 @@ def ensure_release_built():
     print("   -> ✓ Flutter Release Bundle hazır.")
 
 def build_tar_gz():
-    """Build portable .tar.gz archive."""
+    """Build portable .tar.gz archive and return (path, sha256)."""
     print("\n📦 [2/5] Portable .tar.gz paketi oluşturuluyor...")
     tar_name = f"YTDx-Studio-{VERSION}-Linux-x86_64.tar.gz"
     tar_path = DIST_DIR / tar_name
@@ -64,8 +74,12 @@ def build_tar_gz():
         tar.add(stage_dir, arcname=f"YTDx-Studio-{VERSION}", filter=anonymize_tar)
 
     shutil.rmtree(stage_dir)
+
+    # Compute sha256
+    sha256 = hashlib.sha256(tar_path.read_bytes()).hexdigest()
     print(f"   -> ✓ {tar_name} oluşturuldu ({tar_path.stat().st_size / (1024*1024):.1f} MB).")
-    return tar_path
+    print(f"   -> SHA-256: {sha256}")
+    return tar_path, sha256
 
 def build_deb():
     """Build Debian/Ubuntu .deb package."""
@@ -98,7 +112,8 @@ def build_deb():
     # Wrapper script in /usr/bin/ytdx
     launcher = bin_dir / "ytdx"
     launcher.write_text(f"""#!/usr/bin/env bash
-/opt/{APP_NAME}/bundle/aura_app "$@"
+export YTDX_PROJECT_ROOT="/opt/{APP_NAME}"
+exec "/opt/{APP_NAME}/bundle/aura_app" "$@"
 """)
     launcher.chmod(0o755)
 
@@ -152,9 +167,11 @@ exit 0
     # Build .deb with dpkg-deb or fallback python ar
     if shutil.which("dpkg-deb"):
         subprocess.run(["dpkg-deb", "--build", str(deb_root), str(deb_path)], check=True)
+    elif create_deb_package:
+        print("   -> dpkg-deb bulunamadı, dahili paketleyici (make_deb.py) kullanılıyor...")
+        create_deb_package(deb_root, deb_path)
     else:
-        # Pure Python fallback to create .deb archive
-        print("   -> dpkg-deb bulunamadı, dahili paketleyici kullanılıyor...")
+        print("   -> dpkg-deb bulunamadı, yerel ar paketleyici kullanılıyor...")
         build_deb_fallback(deb_root, deb_path)
 
     shutil.rmtree(deb_root)
@@ -221,12 +238,15 @@ def build_appimage():
     shutil.copy(ROOT_DIR / "requirements.txt", app_dir / "requirements.txt")
     shutil.copy(ROOT_DIR / "main.py", app_dir / "main.py")
     shutil.copy(ROOT_DIR / "icons" / "icon_256.png", app_dir / "ytdx.png")
+    shutil.copy(ROOT_DIR / "icons" / "icon_256.png", app_dir / "ytdx-studio.png")
+    shutil.copy(ROOT_DIR / "icons" / "icon_256.png", app_dir / ".DirIcon")
 
     # AppRun entrypoint
     apprun = app_dir / "AppRun"
     apprun.write_text("""#!/usr/bin/env bash
 HERE="$(dirname "$(readlink -f "${0}")")"
 export LD_LIBRARY_PATH="${HERE}/bundle/lib:${LD_LIBRARY_PATH}"
+export YTDX_PROJECT_ROOT="${HERE}"
 exec "${HERE}/bundle/aura_app" "$@"
 """)
     apprun.chmod(0o755)
@@ -245,9 +265,9 @@ StartupWMClass=aura_app
 """)
     desktop.chmod(0o644)
 
-    # Download appimagetool if not present
-    appimagetool = DIST_DIR / "appimagetool-x86_64.AppImage"
-    if not appimagetool.exists():
+    # Download appimagetool to temporary directory if not present
+    appimagetool = Path("/tmp/appimagetool-x86_64.AppImage")
+    if not appimagetool.exists() or appimagetool.stat().st_size < 1000000:
         print("   -> appimagetool indiriliyor...")
         url = "https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage"
         subprocess.run(["curl", "-L", "-o", str(appimagetool), url, "--silent"], check=True)
@@ -264,14 +284,19 @@ StartupWMClass=aura_app
             env=env,
             check=True
         )
+        out_appimage.chmod(0o755)
         print(f"   -> ✓ {out_appimage.name} oluşturuldu ({out_appimage.stat().st_size / (1024*1024):.1f} MB).")
     except Exception as e:
         print(f"   -> ⚠️ AppImage derlenirken hata: {e}")
     finally:
         if app_dir.exists():
             shutil.rmtree(app_dir)
+        # Ensure no residual tool in dist/
+        local_tool = DIST_DIR / "appimagetool-x86_64.AppImage"
+        if local_tool.exists():
+            local_tool.unlink()
 
-def create_arch_pkgbuild():
+def create_arch_pkgbuild(tar_sha256: str = 'SKIP'):
     """Create Arch Linux PKGBUILD."""
     print("\n📦 [5/5] Arch Linux PKGBUILD oluşturuluyor...")
     pkgbuild = DIST_DIR / "PKGBUILD"
@@ -285,7 +310,7 @@ url="https://github.com/AllLiveSupport/YTDx-Studio"
 license=('MIT')
 depends=('ffmpeg' 'python' 'python-pip' 'python-virtualenv' 'gtk3' 'gstreamer' 'gst-plugins-base' 'gst-plugins-good')
 source=("https://github.com/AllLiveSupport/YTDx-Studio/releases/download/v{VERSION}/YTDx-Studio-{VERSION}-Linux-x86_64.tar.gz")
-sha256sums=('SKIP')
+sha256sums=('{tar_sha256}')
 
 package() {{
     install -d "$pkgdir/opt/{APP_NAME}"
@@ -323,18 +348,22 @@ def main():
     print("⚡ YTDx Studio - Çoklu Dağıtım Paket Üretim Motoru")
     print("=" * 60)
     ensure_release_built()
-    build_tar_gz()
+    _, tar_sha256 = build_tar_gz()
     build_deb()
     build_appimage()
-    create_arch_pkgbuild()
+    create_arch_pkgbuild(tar_sha256)
     print("\n" + "=" * 60)
     print("🎉 TÜM DAĞITIM PAKETLERİ BAŞARIYLA ÜRETİLDİ!")
     print(f"📁 Dosyalar '{DIST_DIR.resolve()}' klasöründe:")
-    for f in DIST_DIR.iterdir():
+    for f in sorted(DIST_DIR.iterdir()):
         if f.is_file() and not f.name.endswith(".AppImage.part"):
             size_mb = f.stat().st_size / (1024 * 1024)
-            print(f"   • {f.name:<42} ({size_mb:.2f} MB)")
+            if size_mb >= 0.01:
+                print(f"   • {f.name:<42} ({size_mb:.2f} MB)")
+            else:
+                print(f"   • {f.name:<42} ({f.stat().st_size} B)")
     print("=" * 60)
 
 if __name__ == "__main__":
     main()
+
